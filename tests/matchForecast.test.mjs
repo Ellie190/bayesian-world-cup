@@ -1,0 +1,21 @@
+import assert from "node:assert/strict";
+import { teams } from "../src/data.js";
+import { buildForecastRatings, buildMatchForecast } from "../src/matchForecast.js";
+
+const ratings = buildForecastRatings(teams, [
+  { team1: "Mexico", team2: "South Africa", status: "completed", scoreFt: [2, 0], isDraw: false, winner: "Mexico" },
+  { team1: "South Korea", team2: "Czech Republic", status: "completed", scoreFt: [2, 1], isDraw: false, winner: "South Korea" },
+  { team1: "Mexico", team2: "South Korea", status: "upcoming" }
+]);
+
+assert.ok(ratings.has("South Africa"));
+assert.ok(ratings.has("Czech Republic"));
+assert.ok(ratings.get("Mexico") > ratings.get("South Africa"));
+
+const forecast = buildMatchForecast("Mexico", "South Korea", ratings);
+assert.ok(forecast.favoredTeam === "Mexico" || forecast.favoredTeam === "South Korea");
+assert.equal(forecast.likelyScorelines.length, 3);
+assert.ok(forecast.likelyScorelines[0].probability >= forecast.likelyScorelines[1].probability);
+assert.ok(forecast.win + forecast.draw + forecast.loss > 0.99);
+
+console.log("match forecast tests passed");

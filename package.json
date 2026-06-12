@@ -1,0 +1,10 @@
+{
+  "name": "bayesian-world-cup",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 5173",
+    "test": "node tests/run.mjs"
+  }
+}

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bayesian World Cup</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="setup-rail" aria-label="Model setup">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 18 10 4l4.3 8.1L20 6.4V18H4Z" /></svg>
+          </span>
+          <div>
+            <h1>Bayesian World Cup</h1>
+            <p>Posterior tournament lab</p>
+          </div>
+        </div>
+
+        <section class="control-block">
+          <div class="section-title">
+            <span>Prior seasons</span>
+            <strong id="base-count">4 seasons</strong>
+          </div>
+          <div class="year-grid" id="year-grid" aria-label="Prior seasons"></div>
+        </section>
+
+        <section class="control-block">
+          <div class="section-title">
+            <span>Likelihood</span>
+            <strong id="live-readout">45%</strong>
+          </div>
+          <label class="slider-row">
+            <span>Live evidence weight</span>
+            <input id="live-weight" type="range" min="0" max="100" value="45" />
+          </label>
+          <label class="toggle-row">
+            <input id="discipline-toggle" type="checkbox" checked />
+            <span>Apply cards and suspensions</span>
+          </label>
+        </section>
+
+        <section class="control-block">
+          <div class="section-title">
+            <span>Monte Carlo</span>
+            <strong id="sim-readout">10k</strong>
+          </div>
+          <div class="stepper">
+            <button id="sim-minus" aria-label="Reduce simulations">
+              <svg viewBox="0 0 24 24"><path d="M5 12h14" /></svg>
+            </button>
+            <output id="sim-count">10,000 simulations</output>
+            <button id="sim-plus" aria-label="Increase simulations">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+            </button>
+          </div>
+          <button class="primary-action" id="run-sim">
+            <svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z" /></svg>
+            <span id="run-button-label">Run 10,000 simulations</span>
+          </button>
+        </section>
+
+        <section class="model-note">
+          <h2>Bayesian update</h2>
+          <p>Prior strength is shrunk by sample depth, then shifted by live evidence, completed results, and availability penalties before tournament paths are simulated.</p>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="top-label">Prior strength to tournament paths</p>
+            <h2 id="selected-tournament-name">World Cup posterior projection</h2>
+            <p class="status-note" id="data-status">Loading tournament data...</p>
+          </div>
+          <div class="top-actions">
+            <button class="icon-button" id="refresh-btn" title="Refresh tournament data" aria-label="Refresh tournament data">
+              <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v6h6" /></svg>
+            </button>
+            <button class="secondary-action" id="export-btn">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" /></svg>
+              Export snapshot
+            </button>
+          </div>
+        </header>
+
+        <section class="analysis-grid">
+          <article class="panel strength-panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Posterior team strengths</h3>
+                <p id="strength-context">Mean rating with 80% credible interval</p>
+              </div>
+              <select id="region-filter" aria-label="Filter teams">
+                <option value="all">All teams</option>
+                <option value="uefa">UEFA</option>
+                <option value="conmebol">CONMEBOL</option>
+                <option value="caf">CAF</option>
+                <option value="afc">AFC</option>
+                <option value="concacaf">CONCACAF</option>
+              </select>
+            </div>
+            <div class="strength-list" id="strength-list"></div>
+          </article>
+
+          <article class="panel match-center-panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Match center</h3>
+                <p id="match-center-summary">Fixtures, scores, and winners by tournament year</p>
+              </div>
+            </div>
+
+            <div class="match-center-controls">
+              <label>Tournament<select id="tournament-select"></select></label>
+              <label>Show<select id="match-filter">
+                <option value="all">All matches</option>
+                <option value="completed">Completed</option>
+                <option value="upcoming">Upcoming</option>
+              </select></label>
+            </div>
+
+            <div class="match-center-meta">
+              <span id="source-badge" class="source-badge">Loading</span>
+              <span id="last-updated">Waiting for data...</span>
+            </div>
+            <p class="coverage-note" id="model-coverage"></p>
+
+            <div class="match-groups" id="match-groups" aria-live="polite"></div>
+          </article>
+        </section>
+
+        <section class="projection-strip" aria-label="Tournament stage projections">
+          <div class="strip-head">
+            <div>
+              <h3>Posterior title odds</h3>
+              <p>Group stage and knockout path probabilities with uncertainty intervals</p>
+            </div>
+            <span id="last-run">Seeded run ready</span>
+          </div>
+          <div class="stage-table" id="stage-table"></div>
+        </section>
+      </main>
+
+      <aside class="insight-rail" aria-label="Scenario adjustments">
+        <section class="panel forecast-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Selected match forecast</h3>
+              <p>Tap any fixture for an easy read on the likely winner and most plausible scores</p>
+            </div>
+          </div>
+          <div class="forecast-summary" id="forecast-summary"></div>
+          <div class="match-picker">
+            <label>Team A<select id="team-a"></select></label>
+            <label>Team B<select id="team-b"></select></label>
+          </div>
+          <p class="coverage-note" id="selected-match-note"></p>
+          <div id="match-probs" class="prob-card"></div>
+          <div class="scoreline-list" id="scoreline-list"></div>
+          <div class="mini-chart" id="mini-chart" aria-hidden="true"></div>
+        </section>
+
+        <section class="panel adjust-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Prior strength adjustment</h3>
+              <p>Availability and discipline inputs</p>
+            </div>
+          </div>
+          <label class="field-label">Team<select id="adjust-team"></select></label>
+          <div class="adjust-grid">
+            <label>Injury<input id="injury" type="range" min="0" max="10" value="2" /></label>
+            <label>Yellow<input id="yellow" type="range" min="0" max="10" value="1" /></label>
+            <label>Red<input id="red" type="range" min="0" max="10" value="0" /></label>
+            <label>Suspension<input id="suspension" type="range" min="0" max="10" value="3" /></label>
+          </div>
+          <div class="delta-readout" id="delta-readout"></div>
+        </section>
+
+        <section class="panel paths-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Knockout path</h3>
+              <p>Route sensitivity after current inputs</p>
+            </div>
+          </div>
+          <div id="path-list" class="path-list"></div>
+        </section>
+
+        <section class="panel champion-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Champion distribution</h3>
+              <p>Top posterior outcomes</p>
+            </div>
+          </div>
+          <div id="champion-list"></div>
+        </section>
+      </aside>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
