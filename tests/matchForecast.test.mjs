@@ -17,5 +17,9 @@ assert.ok(forecast.favoredTeam === "Mexico" || forecast.favoredTeam === "South K
 assert.equal(forecast.likelyScorelines.length, 3);
 assert.ok(forecast.likelyScorelines[0].probability >= forecast.likelyScorelines[1].probability);
 assert.ok(forecast.win + forecast.draw + forecast.loss > 0.99);
+assert.ok(forecast.marketStats.length >= 8);
+assert.ok(forecast.marketStats.some((market) => market.label === "Both teams to score"));
+assert.ok(forecast.marketStats.some((market) => market.label === "Estimated corners"));
+assert.ok(forecast.marketStats.every((market) => market.probability >= 0 && market.probability <= 1));
 
 console.log("match forecast tests passed");
