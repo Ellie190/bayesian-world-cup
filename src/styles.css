@@ -569,6 +569,68 @@ select {
   font-size: 12px;
 }
 
+.betting-stats {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.betting-stats-head {
+  display: grid;
+  gap: 4px;
+}
+
+.betting-stats-head h4 {
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.betting-stats-head p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.market-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface-3);
+  display: grid;
+  gap: 4px;
+}
+
+.market-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.market-card strong {
+  font-size: 14px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.market-card small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.market-card.green { border-color: #cfe3d8; }
+.market-card.blue { border-color: #d3e3ef; }
+.market-card.amber { border-color: #eadcc2; }
+
 .prob-row {
   display: grid;
   grid-template-columns: 48px 1fr 44px;
@@ -771,5 +833,6 @@ select {
   .cell { border-right: 0; }
   .cell.header:not(:first-child) { display: none; }
   .match-center-controls, .match-picker { grid-template-columns: 1fr; }
+  .market-grid { grid-template-columns: 1fr; }
   .match-groups { max-height: none; }
 }

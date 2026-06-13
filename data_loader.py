@@ -260,21 +260,21 @@ class HistoricalDataLoader:
         # Load built-in data
         if builtin:
             dfs.append(self.load_builtin_wc_data())
-            print(f"✅ Loaded built-in WC data: {len(dfs[-1])} matches")
+            print(f"Loaded built-in WC data: {len(dfs[-1])} matches")
         
         # Load CSVs
         if csv_files:
             for filepath in csv_files:
                 df = self.load_from_csv(filepath)
                 dfs.append(df)
-                print(f"✅ Loaded {filepath}: {len(df)} matches")
+                print(f"Loaded {filepath}: {len(df)} matches")
         
         # Load JSONs
         if json_files:
             for filepath in json_files:
                 df = self.load_from_json(filepath)
                 dfs.append(df)
-                print(f"✅ Loaded {filepath}: {len(df)} matches")
+                print(f"Loaded {filepath}: {len(df)} matches")
         
         # Combine all
         if not dfs:
