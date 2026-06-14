@@ -332,6 +332,34 @@ export function buildResultsAdjustments(matches, priors) {
   return adjustments;
 }
 
+function roundSortKey(round, matches) {
+  const text = String(round ?? "");
+  const matchday = text.match(/matchday\s+(\d+)/i);
+  if (matchday) return [0, Number(matchday[1]), text];
+
+  const stageOrder = [
+    "group stage",
+    "round of 16",
+    "quarter-finals",
+    "quarterfinals",
+    "quarter-final",
+    "quarter final",
+    "semi-finals",
+    "semifinals",
+    "semi-final",
+    "semi final",
+    "third place",
+    "final"
+  ];
+  const stageIndex = stageOrder.findIndex((item) => item === text.toLowerCase());
+  if (stageIndex >= 0) return [1, stageIndex, text];
+
+  const firstDate = matches
+    .map((match) => `${match.date ?? ""} ${match.time ?? ""}`.trim())
+    .sort()[0] ?? "";
+  return [2, firstDate, text];
+}
+
 export function groupMatchesByRound(matches, filter) {
   const filtered = matches.filter((match) => filter === "all" || match.status === filter);
   const groups = [];
@@ -349,5 +377,13 @@ export function groupMatchesByRound(matches, filter) {
     });
   }
 
-  return groups;
+  return groups.sort((a, b) => {
+    const keyA = roundSortKey(a.round, a.matches);
+    const keyB = roundSortKey(b.round, b.matches);
+    for (let i = 0; i < Math.max(keyA.length, keyB.length); i += 1) {
+      if (keyA[i] === keyB[i]) continue;
+      return String(keyA[i]).localeCompare(String(keyB[i]), undefined, { numeric: true });
+    }
+    return 0;
+  });
 }

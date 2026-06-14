@@ -21,5 +21,8 @@ assert.ok(forecast.marketStats.length >= 8);
 assert.ok(forecast.marketStats.some((market) => market.label === "Both teams to score"));
 assert.ok(forecast.marketStats.some((market) => market.label === "Estimated corners"));
 assert.ok(forecast.marketStats.every((market) => market.probability >= 0 && market.probability <= 1));
+assert.equal(forecast.goalDistributions.length, 2);
+assert.ok(forecast.goalDistributions.every((distribution) => distribution.bars.length === 7));
+assert.ok(forecast.goalDistributions.every((distribution) => Math.abs(distribution.bars.reduce((sum, bar) => sum + bar.probability, 0) - 1) < 0.02));
 
 console.log("match forecast tests passed");

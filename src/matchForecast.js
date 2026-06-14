@@ -43,6 +43,29 @@ function poissonCdf(lambda, maxGoals) {
   return total;
 }
 
+function buildGoalDistribution(lambda, maxGoals = 5) {
+  const bars = [];
+  let coveredProbability = 0;
+
+  for (let goals = 0; goals <= maxGoals; goals += 1) {
+    const probability = poissonProbability(lambda, goals);
+    coveredProbability += probability;
+    bars.push({
+      label: String(goals),
+      goals,
+      probability
+    });
+  }
+
+  bars.push({
+    label: `${maxGoals + 1}+`,
+    goals: maxGoals + 1,
+    probability: Math.max(0, 1 - coveredProbability)
+  });
+
+  return bars;
+}
+
 export function buildMatchForecast(teamA, teamB, ratings) {
   const ratingA = ratings.get(teamA) ?? DEFAULT_BASELINE;
   const ratingB = ratings.get(teamB) ?? DEFAULT_BASELINE;
@@ -71,6 +94,8 @@ export function buildMatchForecast(teamA, teamB, ratings) {
   }
 
   scorelines.sort((a, b) => b.probability - a.probability);
+  const goalDistributionA = buildGoalDistribution(expectedGoalsA);
+  const goalDistributionB = buildGoalDistribution(expectedGoalsB);
 
   const bttsYes = (1 - poissonProbability(expectedGoalsA, 0)) * (1 - poissonProbability(expectedGoalsB, 0));
   const totalGoalsLambda = expectedGoalsA + expectedGoalsB;
@@ -111,6 +136,10 @@ export function buildMatchForecast(teamA, teamB, ratings) {
     expectedGoalsA,
     expectedGoalsB,
     likelyScorelines: scorelines.slice(0, 3),
-    marketStats
+    marketStats,
+    goalDistributions: [
+      { team: teamA, xg: expectedGoalsA, bars: goalDistributionA },
+      { team: teamB, xg: expectedGoalsB, bars: goalDistributionB }
+    ]
   };
 }

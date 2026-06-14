@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./src/styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <div class="app-shell compact-shell">
       <aside class="setup-rail" aria-label="Model setup">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true">
@@ -15,7 +15,7 @@
           </span>
           <div>
             <h1>Bayesian World Cup</h1>
-            <p>Posterior tournament lab</p>
+            <p>Lightweight forecast studio</p>
           </div>
         </div>
 
@@ -29,11 +29,11 @@
 
         <section class="control-block">
           <div class="section-title">
-            <span>Likelihood</span>
+            <span>Live evidence</span>
             <strong id="live-readout">45%</strong>
           </div>
           <label class="slider-row">
-            <span>Live evidence weight</span>
+            <span>Recent results weight</span>
             <input id="live-weight" type="range" min="0" max="100" value="45" />
           </label>
           <label class="toggle-row">
@@ -44,7 +44,7 @@
 
         <section class="control-block">
           <div class="section-title">
-            <span>Monte Carlo</span>
+            <span>Simulations</span>
             <strong id="sim-readout">10k</strong>
           </div>
           <div class="stepper">
@@ -63,15 +63,15 @@
         </section>
 
         <section class="model-note">
-          <h2>Bayesian update</h2>
-          <p>Prior strength is shrunk by sample depth, then shifted by live evidence, completed results, and availability penalties before tournament paths are simulated.</p>
+          <h2>What stays in the model</h2>
+          <p>Only the essentials: team strength, completed results, expected goals, likely scores, and title odds.</p>
         </section>
       </aside>
 
-      <main class="workspace">
+      <main class="workspace compact-workspace">
         <header class="topbar">
           <div>
-            <p class="top-label">Prior strength to tournament paths</p>
+            <p class="top-label">Updated after each loaded result set</p>
             <h2 id="selected-tournament-name">World Cup posterior projection</h2>
             <p class="status-note" id="data-status">Loading tournament data...</p>
           </div>
@@ -86,25 +86,24 @@
           </div>
         </header>
 
-        <section class="analysis-grid">
-          <article class="panel strength-panel">
-            <div class="panel-heading">
-              <div>
-                <h3>Posterior team strengths</h3>
-                <p id="strength-context">Mean rating with 80% credible interval</p>
-              </div>
-              <select id="region-filter" aria-label="Filter teams">
-                <option value="all">All teams</option>
-                <option value="uefa">UEFA</option>
-                <option value="conmebol">CONMEBOL</option>
-                <option value="caf">CAF</option>
-                <option value="afc">AFC</option>
-                <option value="concacaf">CONCACAF</option>
-              </select>
-            </div>
-            <div class="strength-list" id="strength-list"></div>
+        <section class="overview-strip">
+          <article class="overview-card">
+            <span class="overview-label">Source</span>
+            <strong id="source-badge" class="source-badge">Loading</strong>
+            <p id="last-updated">Waiting for data...</p>
           </article>
+          <article class="overview-card">
+            <span class="overview-label">Top contenders</span>
+            <div id="contenders-list" class="contenders-list"></div>
+          </article>
+          <article class="overview-card">
+            <span class="overview-label">Current run</span>
+            <strong id="last-run">Seeded run ready</strong>
+            <p id="tournament-note">Title odds update from lightweight Bayesian sampling.</p>
+          </article>
+        </section>
 
+        <section class="compact-grid">
           <article class="panel match-center-panel">
             <div class="panel-heading">
               <div>
@@ -122,91 +121,47 @@
               </select></label>
             </div>
 
-            <div class="match-center-meta">
-              <span id="source-badge" class="source-badge">Loading</span>
-              <span id="last-updated">Waiting for data...</span>
-            </div>
             <p class="coverage-note" id="model-coverage"></p>
-
             <div class="match-groups" id="match-groups" aria-live="polite"></div>
           </article>
-        </section>
 
-        <section class="projection-strip" aria-label="Tournament stage projections">
-          <div class="strip-head">
-            <div>
-              <h3>Posterior title odds</h3>
-              <p>Group stage and knockout path probabilities with uncertainty intervals</p>
-            </div>
-            <span id="last-run">Seeded run ready</span>
+          <div class="right-stack">
+            <article class="panel forecast-panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Selected match forecast</h3>
+                  <p>Winner, expected goals, and most likely scorelines</p>
+                </div>
+              </div>
+              <div class="match-picker">
+                <label>Team A<select id="team-a"></select></label>
+                <label>Team B<select id="team-b"></select></label>
+              </div>
+              <p class="coverage-note" id="selected-match-note"></p>
+              <div class="forecast-summary" id="forecast-summary"></div>
+              <div id="match-probs" class="prob-card"></div>
+              <div class="scoreline-list" id="scoreline-list"></div>
+              <div class="xg-distribution">
+                <div class="betting-stats-head">
+                  <h4>Goal distribution view</h4>
+                  <p>Bars show how often each goal total appears if the same match is replayed many times.</p>
+                </div>
+                <div class="distribution-grid" id="distribution-grid"></div>
+              </div>
+            </article>
+
+            <article class="panel title-panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Title odds</h3>
+                  <p>Champion chances with a simple uncertainty range</p>
+                </div>
+              </div>
+              <div id="title-odds-list" class="title-odds-list"></div>
+            </article>
           </div>
-          <div class="stage-table" id="stage-table"></div>
         </section>
       </main>
-
-      <aside class="insight-rail" aria-label="Scenario adjustments">
-        <section class="panel forecast-panel">
-          <div class="panel-heading">
-            <div>
-              <h3>Selected match forecast</h3>
-              <p>Tap any fixture for an easy read on the likely winner and most plausible scores</p>
-            </div>
-          </div>
-          <div class="forecast-summary" id="forecast-summary"></div>
-          <div class="match-picker">
-            <label>Team A<select id="team-a"></select></label>
-            <label>Team B<select id="team-b"></select></label>
-          </div>
-          <p class="coverage-note" id="selected-match-note"></p>
-          <div id="match-probs" class="prob-card"></div>
-          <div class="scoreline-list" id="scoreline-list"></div>
-          <div class="betting-stats">
-            <div class="betting-stats-head">
-              <h4>Betway-style football stats</h4>
-              <p>Common football betting angles, shown as fan-friendly probabilities and estimates</p>
-            </div>
-            <div class="market-grid" id="market-grid"></div>
-          </div>
-          <div class="mini-chart" id="mini-chart" aria-hidden="true"></div>
-        </section>
-
-        <section class="panel adjust-panel">
-          <div class="panel-heading">
-            <div>
-              <h3>Prior strength adjustment</h3>
-              <p>Availability and discipline inputs</p>
-            </div>
-          </div>
-          <label class="field-label">Team<select id="adjust-team"></select></label>
-          <div class="adjust-grid">
-            <label>Injury<input id="injury" type="range" min="0" max="10" value="2" /></label>
-            <label>Yellow<input id="yellow" type="range" min="0" max="10" value="1" /></label>
-            <label>Red<input id="red" type="range" min="0" max="10" value="0" /></label>
-            <label>Suspension<input id="suspension" type="range" min="0" max="10" value="3" /></label>
-          </div>
-          <div class="delta-readout" id="delta-readout"></div>
-        </section>
-
-        <section class="panel paths-panel">
-          <div class="panel-heading">
-            <div>
-              <h3>Knockout path</h3>
-              <p>Route sensitivity after current inputs</p>
-            </div>
-          </div>
-          <div id="path-list" class="path-list"></div>
-        </section>
-
-        <section class="panel champion-panel">
-          <div class="panel-heading">
-            <div>
-              <h3>Champion distribution</h3>
-              <p>Top posterior outcomes</p>
-            </div>
-          </div>
-          <div id="champion-list"></div>
-        </section>
-      </aside>
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

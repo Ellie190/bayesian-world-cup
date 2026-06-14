@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildResultsAdjustments, loadTournament, normalizeTournament } from "../src/tournamentData.js";
+import { buildResultsAdjustments, groupMatchesByRound, loadTournament, normalizeTournament } from "../src/tournamentData.js";
 import { teams } from "../src/data.js";
 
 const normalized = normalizeTournament({
@@ -61,5 +61,13 @@ const mixedSecond = await loadTournament(2018, {
 });
 assert.equal(mixedFirst.source, "remote");
 assert.equal(mixedSecond.source, "fallback");
+
+const grouped = groupMatchesByRound([
+  { round: "Matchday 8", status: "upcoming", team1: "A", team2: "B", date: "2026-06-18", time: "19:00" },
+  { round: "Matchday 1", status: "upcoming", team1: "C", team2: "D", date: "2026-06-11", time: "10:00" },
+  { round: "Final", status: "upcoming", team1: "E", team2: "F", date: "2026-07-12", time: "19:00" },
+  { round: "Semi-finals", status: "upcoming", team1: "G", team2: "H", date: "2026-07-08", time: "19:00" }
+], "all");
+assert.deepEqual(grouped.map((group) => group.round), ["Matchday 1", "Matchday 8", "Semi-finals", "Final"]);
 
 console.log("tournament data tests passed");

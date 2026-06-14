@@ -1,5 +1,5 @@
-import { seasons, stages, teams } from "./data.js";
-import { adjustmentFor, formatPct, rankedTeams, simulateTournament, uncertainty } from "./model.js";
+import { seasons, teams } from "./data.js";
+import { formatPct, rankedTeams, simulateTournament } from "./model.js";
 import { buildResultsAdjustments, groupMatchesByRound, loadTournament, loadTournamentIndex } from "./tournamentData.js";
 import { buildForecastRatings, buildMatchForecast } from "./matchForecast.js";
 
@@ -15,7 +15,6 @@ const initialState = () => ({
   liveWeight: 45,
   simulations: 10000,
   discipline: true,
-  filter: "all",
   teamA: "Brazil",
   teamB: "France",
   adjustTeam: "France",
@@ -109,10 +108,8 @@ function renderSelectors() {
   ["team-a", "team-b"].forEach((id) => {
     $(id).innerHTML = teamOptions;
   });
-  $("adjust-team").innerHTML = teams.map((team) => `<option value="${team.name}">${team.name}</option>`).join("");
   $("team-a").value = state.teamA;
   $("team-b").value = state.teamB;
-  $("adjust-team").value = state.adjustTeam;
 
   $("tournament-select").innerHTML = tournamentIndex
     .map((entry) => `<option value="${entry.year}">${entry.label}</option>`)
@@ -128,13 +125,13 @@ function renderTopbar() {
   const loading = state.loadingYears.has(state.selectedTournamentYear);
 
   $("selected-tournament-name").textContent = tournament
-    ? `${tournament.label} posterior projection`
-    : "World Cup posterior projection";
+    ? `${tournament.label} lightweight forecast`
+    : "World Cup lightweight forecast";
 
   if (loading && !tournament) {
     $("data-status").textContent = "Loading tournament data from openfootball...";
   } else if (source === "remote") {
-    $("data-status").textContent = "Remote match data connected and shaping the current forecast.";
+    $("data-status").textContent = "Remote match data is shaping the current forecast.";
   } else if (source === "fallback") {
     $("data-status").textContent = "Using bundled snapshot because the remote source was unavailable.";
   } else {
@@ -155,68 +152,40 @@ function renderTopbar() {
   }
 }
 
-function renderStrengths() {
-  const tournament = currentTournament();
-  if (tournament) {
-    const { completed } = tournamentStats(tournament);
-    $("strength-context").textContent = `Mean rating with 80% credible interval, including ${completed} completed result${completed === 1 ? "" : "s"}`;
-  } else {
-    $("strength-context").textContent = "Mean rating with 80% credible interval";
-  }
-
-  const list = rankedTeams(state)
-    .filter((team) => state.filter === "all" || team.region === state.filter)
-    .slice(0, 12);
-  const values = list.map((team) => team.strength);
-  const min = Math.min(...values) - uncertainty(state);
-  const max = Math.max(...values) + uncertainty(state);
-
-  $("strength-list").innerHTML = list.map((team, index) => {
-    const u = uncertainty(state);
-    const lo = ((team.strength - u - min) / (max - min)) * 100;
-    const hi = ((team.strength + u - min) / (max - min)) * 100;
-    const mean = ((team.strength - min) / (max - min)) * 100;
-    const availabilityDelta = adjustmentFor(team.name, state);
-    const resultsDelta = state.resultsAdjustments[team.name] ?? 0;
-    const notes = [team.region.toUpperCase()];
-    if (resultsDelta) notes.push(`results ${resultsDelta >= 0 ? "+" : ""}${resultsDelta.toFixed(1)}`);
-    if (availabilityDelta) notes.push(`adj ${availabilityDelta.toFixed(1)}`);
-    return `<div class="team-row">
-      <span class="rank">${index + 1}</span>
-      <span class="team-name"><strong>${team.name}</strong><span>${notes.join(", ")}</span></span>
-      <span class="interval"><span class="band" style="left:${lo}%;width:${Math.max(4, hi - lo)}%"></span><span class="mean" style="left:${mean}%"></span></span>
-      <span class="score">${team.strength.toFixed(1)}</span>
-    </div>`;
-  }).join("");
+function renderOverview() {
+  const contenders = rankedTeams(state).slice(0, 5);
+  $("contenders-list").innerHTML = contenders.map((team) => `
+    <div class="contender-pill">
+      <span>${team.name}</span>
+      <strong>${team.strength.toFixed(1)}</strong>
+    </div>
+  `).join("");
+  $("tournament-note").textContent = "Title odds update from sampled strengths and Poisson-style match scoring.";
 }
 
 function renderMatchForecast() {
   const match = findSelectedMatch();
   const note = $("selected-match-note");
   const forecast = buildMatchForecast(state.teamA, state.teamB, currentForecastRatings());
-  const marketGrid = $("market-grid");
+  const distributionGrid = $("distribution-grid");
   const isSelectedFixture = match && state.teamA === match.team1 && state.teamB === match.team2;
 
-  if (isSelectedFixture) {
-    note.textContent = `${match.round}${match.group ? ` · ${match.group}` : ""} · ${formatMatchDate(match)}`;
-  } else {
-    note.textContent = "Manual team comparison";
-  }
+  note.textContent = isSelectedFixture
+    ? `${match.round}${match.group ? ` · ${match.group}` : ""} · ${formatMatchDate(match)}`
+    : "Manual team comparison";
 
-  const summary = $("forecast-summary");
-  const scorelineList = $("scoreline-list");
   const headline = match?.status === "completed"
     ? match.isDraw ? "It finished level" : `${match.winner} won`
-    : `${forecast.favoredTeam} are the likely winner`;
+    : `${forecast.favoredTeam} are more likely to win`;
   const confidenceText = match?.status === "completed"
     ? match.isDraw ? "Finished level" : "Full-time result"
     : `${Math.round(forecast.favoredProbability * 100)}% ${forecast.confidenceLabel.toLowerCase()}`;
   const subline = match?.status === "completed"
     ? `${match.team1} ${match.scoreFt?.[0] ?? "?"} - ${match.scoreFt?.[1] ?? "?"} ${match.team2}`
-    : `Projected goals: ${forecast.expectedGoalsA.toFixed(1)} for ${state.teamA}, ${forecast.expectedGoalsB.toFixed(1)} for ${state.teamB}`;
+    : `Expected goals: ${forecast.expectedGoalsA.toFixed(2)} for ${state.teamA}, ${forecast.expectedGoalsB.toFixed(2)} for ${state.teamB}`;
 
-  summary.innerHTML = `
-    <div class="forecast-kicker">${match?.status === "completed" ? "Match result" : "Likely winner"}</div>
+  $("forecast-summary").innerHTML = `
+    <div class="forecast-kicker">${match?.status === "completed" ? "Match result" : "Most likely outcome"}</div>
     <div class="forecast-headline">
       <strong>${headline}</strong>
       <span class="forecast-confidence">${confidenceText}</span>
@@ -232,7 +201,7 @@ function renderMatchForecast() {
     `<div class="prob-row"><span>${label}</span><span class="prob-track"><span class="prob-fill ${klass}" style="width:${value * 100}%"></span></span><span>${formatPct(value)}</span></div>`
   )).join("");
 
-  scorelineList.innerHTML = forecast.likelyScorelines.map((line, index) => `
+  $("scoreline-list").innerHTML = forecast.likelyScorelines.map((line, index) => `
     <div class="scoreline-chip">
       <div>
         <strong>${index === 0 ? "Most likely score" : "Also plausible"}</strong>
@@ -242,33 +211,26 @@ function renderMatchForecast() {
     </div>
   `).join("");
 
-  marketGrid.innerHTML = forecast.marketStats.map((market) => `
-    <div class="market-card ${market.tone}">
-      <span class="market-label">${market.label}</span>
-      <strong>${market.value}</strong>
-      <small>${Math.round(market.probability * 100)}% confidence</small>
-    </div>
-  `).join("");
-
-  $("mini-chart").innerHTML = Array.from({ length: 12 }, (_, index) => {
-    const h = 18 + (Math.sin(index / 2 + (forecast.ratingA - forecast.ratingB) / 10) + 1) * 22 + ((index * 13) % 11);
-    return `<span style="height:${h}px"></span>`;
+  distributionGrid.innerHTML = forecast.goalDistributions.map((distribution, index) => {
+    const peak = Math.max(...distribution.bars.map((bar) => bar.probability), 0.01);
+    return `
+      <div class="distribution-card ${index === 0 ? "home" : "away"}">
+        <div class="distribution-head">
+          <strong>${distribution.team}</strong>
+          <span>${distribution.xg.toFixed(2)} xG</span>
+        </div>
+        <div class="distribution-bars">
+          ${distribution.bars.map((bar) => `
+            <div class="distribution-bar">
+              <span class="bar-fill" style="height:${Math.max(10, (bar.probability / peak) * 100)}%"></span>
+              <b>${bar.label}</b>
+              <small>${Math.round(bar.probability * 100)}%</small>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
   }).join("");
-}
-
-function renderControls() {
-  $("live-readout").textContent = `${state.liveWeight}%`;
-  $("live-weight").value = state.liveWeight;
-  $("sim-readout").textContent = `${Math.round(state.simulations / 1000)}k`;
-  $("sim-count").textContent = `${state.simulations.toLocaleString()} simulations`;
-  $("run-button-label").textContent = `Run ${state.simulations.toLocaleString()} simulations`;
-  $("discipline-toggle").checked = state.discipline;
-  $("region-filter").value = state.filter;
-  ["injury", "yellow", "red", "suspension"].forEach((id) => {
-    $(id).value = state.inputs[id];
-  });
-  const total = adjustmentFor(state.adjustTeam, state);
-  $("delta-readout").textContent = `${state.adjustTeam}: ${total.toFixed(2)} expected-strength adjustment`;
 }
 
 function renderMatchCenter() {
@@ -289,7 +251,7 @@ function renderMatchCenter() {
 
   const modeledParticipants = tournament.participants.filter((team) => modeledTeams.has(team));
   const excludedParticipants = tournament.participants.filter((team) => !modeledTeams.has(team));
-  coverage.textContent = `${modeledParticipants.length}/${tournament.participants.length} selected-tournament teams are covered by the current forecast model.${excludedParticipants.length ? ` ${excludedParticipants.slice(0, 4).join(", ")}${excludedParticipants.length > 4 ? " and others" : ""} stay visible in results but are excluded from projections.` : ""}`;
+  coverage.textContent = `${modeledParticipants.length}/${tournament.participants.length} teams are in the forecast model.${excludedParticipants.length ? ` ${excludedParticipants.slice(0, 4).join(", ")}${excludedParticipants.length > 4 ? " and others" : ""} stay visible in results only.` : ""}`;
 
   const groups = groupMatchesByRound(tournament.matches, state.matchFilter);
   if (!groups.length) {
@@ -316,7 +278,7 @@ function renderMatchCenter() {
               <span>${match.scoreFt ? match.scoreFt[1] : "?"}</span>
             </div>
           </div>
-          <div class="match-card-meta">${match.ground ?? "Ground pending"}${match.status === "upcoming" ? " · tap for prediction" : match.isDraw ? " · draw" : ` · winner: ${match.winner}`}</div>
+          <div class="match-card-meta">${match.ground ?? "Ground pending"}${match.status === "upcoming" ? " · tap for forecast" : match.isDraw ? " · draw" : ` · winner: ${match.winner}`}</div>
         </button>
       `).join("")}
     </section>
@@ -325,37 +287,39 @@ function renderMatchCenter() {
 
 function renderProjections() {
   const projections = simulateTournament(state);
-  const topRows = projections.slice(0, 8);
-  const header = ["Team", ...stages].map((heading) => `<div class="cell header">${heading}</div>`).join("");
-  const rows = topRows.map((team) => (
-    `<div class="cell team">${team.name}<small>${team.strength.toFixed(1)} posterior</small></div>` +
-    team.projections.map((p) => `<div class="cell">${formatPct(p.p)}<small>${formatPct(p.lo)}-${formatPct(p.hi)}</small></div>`).join("")
-  )).join("");
-  $("stage-table").innerHTML = header + rows;
+  const topRows = projections
+    .sort((a, b) => b.projections[4].p - a.projections[4].p)
+    .slice(0, 5);
 
-  const championTop = [...projections].sort((a, b) => b.projections[4].p - a.projections[4].p).slice(0, 5);
-  $("champion-list").innerHTML = championTop.map((team) => {
-    const p = team.projections[4].p;
-    return `<div class="champion-item"><div class="champion-top"><span>${team.name}</span><span>${formatPct(p)}</span></div><div class="thin-bar"><span style="width:${p * 100}%"></span></div></div>`;
-  }).join("");
+  $("title-odds-list").innerHTML = topRows.map((team, index) => `
+    <div class="title-row">
+      <div class="title-row-top">
+        <span>${index + 1}. ${team.name}</span>
+        <strong>${formatPct(team.projections[4].p)}</strong>
+      </div>
+      <div class="thin-bar"><span style="width:${team.projections[4].p * 100}%"></span></div>
+      <div class="title-row-meta">
+        <span>Final four ${formatPct(team.projections[2].p)}</span>
+        <span>${formatPct(team.projections[4].lo)} - ${formatPct(team.projections[4].hi)}</span>
+      </div>
+    </div>
+  `).join("");
+}
 
-  const phrases = [
-    "wins the softer side of the bracket if recent results continue to reinforce its current rating edge",
-    "has the strongest upside when group-stage momentum carries into the first knockout round",
-    "benefits most from avoiding another negative surprise against a lower-rated side",
-    "still has a live path, but the semi-final step is where the posterior drops most sharply"
-  ];
-  $("path-list").innerHTML = projections.slice(0, 4).map((team, index) => {
-    const q = team.projections[4].p;
-    return `<div class="path-item"><div class="path-top"><span>${team.name}</span><span>${formatPct(q)}</span></div><p>${phrases[index]}</p></div>`;
-  }).join("");
+function renderControls() {
+  $("live-readout").textContent = `${state.liveWeight}%`;
+  $("live-weight").value = state.liveWeight;
+  $("sim-readout").textContent = `${Math.round(state.simulations / 1000)}k`;
+  $("sim-count").textContent = `${state.simulations.toLocaleString()} simulations`;
+  $("run-button-label").textContent = `Run ${state.simulations.toLocaleString()} simulations`;
+  $("discipline-toggle").checked = state.discipline;
 }
 
 function renderAll() {
   renderYearGrid();
   renderSelectors();
   renderTopbar();
-  renderStrengths();
+  renderOverview();
   renderMatchForecast();
   renderControls();
   renderMatchCenter();
@@ -401,50 +365,51 @@ function bindEvents() {
     state.liveWeight = Number(event.target.value);
     renderAll();
   });
+
   $("discipline-toggle").addEventListener("change", (event) => {
     state.discipline = event.target.checked;
     renderAll();
   });
+
   $("sim-minus").addEventListener("click", () => {
     state.simulations = Math.max(6000, state.simulations - 4000);
     renderAll();
   });
+
   $("sim-plus").addEventListener("click", () => {
     state.simulations = Math.min(50000, state.simulations + 4000);
     renderAll();
   });
+
   $("run-sim").addEventListener("click", () => {
     state.seed += 17;
     $("last-run").textContent = `Updated run ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
     renderAll();
   });
-  $("region-filter").addEventListener("change", (event) => {
-    state.filter = event.target.value;
-    renderStrengths();
-  });
+
   $("team-a").addEventListener("change", (event) => {
     state.teamA = event.target.value;
     state.selectedMatchId = null;
     renderMatchForecast();
   });
+
   $("team-b").addEventListener("change", (event) => {
     state.teamB = event.target.value;
     state.selectedMatchId = null;
     renderMatchForecast();
   });
-  $("adjust-team").addEventListener("change", (event) => {
-    state.adjustTeam = event.target.value;
-    renderAll();
-  });
+
   $("tournament-select").addEventListener("change", (event) => {
     state.selectedTournamentYear = Number(event.target.value);
     syncTournamentContext();
     renderAll();
   });
+
   $("match-filter").addEventListener("change", (event) => {
     state.matchFilter = event.target.value;
     renderMatchCenter();
   });
+
   $("match-groups").addEventListener("click", (event) => {
     const card = event.target.closest("[data-match-id]");
     if (!card) return;
@@ -456,31 +421,12 @@ function bindEvents() {
     }
     renderAll();
   });
-  ["injury", "yellow", "red", "suspension"].forEach((id) => {
-    $(id).addEventListener("input", (event) => {
-      state.inputs[id] = Number(event.target.value);
-      renderAll();
-    });
-  });
-  $("reset-btn")?.addEventListener("click", () => {
-    const preserved = {
-      selectedTournamentYear: state.selectedTournamentYear,
-      tournamentsCache: state.tournamentsCache,
-      matchFilter: state.matchFilter,
-      sourceByYear: state.sourceByYear,
-      errorByYear: state.errorByYear,
-      loadedAtByYear: state.loadedAtByYear,
-      loadingYears: new Set(state.loadingYears),
-      selectedMatchId: state.selectedMatchId
-    };
-    state = { ...initialState(), ...preserved };
-    syncTournamentContext();
-    renderAll();
-  });
+
   $("refresh-btn").addEventListener("click", async () => {
     await reloadTournamentYear(state.selectedTournamentYear);
     showToast("Tournament data refreshed");
   });
+
   $("export-btn").addEventListener("click", async () => {
     const tournament = currentTournament();
     const forecast = buildMatchForecast(state.teamA, state.teamB, currentForecastRatings());
@@ -496,9 +442,7 @@ function bindEvents() {
         teamA: state.teamA,
         teamB: state.teamB,
         forecast
-      },
-      adjustedTeam: state.adjustTeam,
-      adjustmentInputs: state.inputs
+      }
     };
     await navigator.clipboard?.writeText(JSON.stringify(snapshot, null, 2));
     showToast("Scenario snapshot copied");
