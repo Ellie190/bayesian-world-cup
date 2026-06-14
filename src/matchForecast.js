@@ -114,14 +114,13 @@ export function buildMatchForecast(teamA, teamB, ratings) {
   const marketStats = [
     { label: "Double chance", value: `${doubleChanceTeam} or draw`, probability: doubleChanceProbability, tone: "green" },
     { label: "Both teams to score", value: bttsYes >= 0.5 ? "Yes" : "No", probability: Math.max(bttsYes, 1 - bttsYes), tone: "blue" },
-    { label: "Over 2.5 goals", value: over25 >= 0.5 ? "Over" : "Under", probability: Math.max(over25, 1 - over25), tone: "amber" },
-    { label: "Over 3.5 goals", value: over35 >= 0.5 ? "Over" : "Under", probability: Math.max(over35, 1 - over35), tone: "amber" },
+    { label: "3+ goals", value: over25 >= 0.5 ? "Over" : "Under", probability: Math.max(over25, 1 - over25), tone: "amber" },
+    { label: "4+ goals", value: over35 >= 0.5 ? "Over" : "Under", probability: Math.max(over35, 1 - over35), tone: "amber" },
     { label: `${teamA} clean sheet`, value: cleanSheetA >= 0.5 ? "Likely" : "Unlikely", probability: cleanSheetA, tone: "green" },
     { label: `${teamB} clean sheet`, value: cleanSheetB >= 0.5 ? "Likely" : "Unlikely", probability: cleanSheetB, tone: "blue" },
     { label: "Team to score first", value: firstToScoreA >= 0.5 ? teamA : teamB, probability: Math.max(firstToScoreA, 1 - firstToScoreA), tone: "green" },
-    { label: "Estimated corners", value: `${estimatedCorners.toFixed(1)} total`, probability: clamp((estimatedCorners - 7) / 7, 0.28, 0.84), tone: "blue" },
-    { label: "Estimated cards", value: `${estimatedCards.toFixed(1)} total`, probability: clamp((estimatedCards - 2) / 5, 0.26, 0.8), tone: "amber" },
-    { label: "Over 1.5 goals", value: over15 >= 0.5 ? "Over" : "Under", probability: Math.max(over15, 1 - over15), tone: "green" }
+    { label: "Estimated corners", value: `${Math.round(estimatedCorners)} total`, probability: clamp((estimatedCorners - 7) / 7, 0.28, 0.84), tone: "blue" },
+    { label: "Estimated cards", value: `${Math.round(estimatedCards)} total`, probability: clamp((estimatedCards - 2) / 5, 0.26, 0.8), tone: "amber" }
   ];
 
   return {

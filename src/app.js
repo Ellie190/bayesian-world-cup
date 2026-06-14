@@ -168,6 +168,7 @@ function renderMatchForecast() {
   const note = $("selected-match-note");
   const forecast = buildMatchForecast(state.teamA, state.teamB, currentForecastRatings());
   const distributionGrid = $("distribution-grid");
+  const marketGrid = $("market-grid");
   const isSelectedFixture = match && state.teamA === match.team1 && state.teamB === match.team2;
 
   note.textContent = isSelectedFixture
@@ -231,6 +232,14 @@ function renderMatchForecast() {
       </div>
     `;
   }).join("");
+
+  marketGrid.innerHTML = forecast.marketStats.map((market) => `
+    <div class="market-card ${market.tone}">
+      <span class="market-label">${market.label}</span>
+      <strong>${market.value}</strong>
+      <small>${Math.round(market.probability * 100)}%</small>
+    </div>
+  `).join("");
 }
 
 function renderMatchCenter() {
